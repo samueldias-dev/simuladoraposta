@@ -1,0 +1,2514 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OddsLab — Simulador Profissional de Gestão de Banca</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* === CSS VARIABLES & THEME === */
+        :root {
+            /* Light Theme (Default) */
+            --color-bg: #FAFAF8;
+            --color-surface: #FFFFFF;
+            --color-surface-hover: #F0F0EE;
+            --color-text-primary: #0D0D0D;
+            --color-text-secondary: #6B6B6B;
+            --color-text-muted: #9CA3AF;
+            --color-accent: #1A1A2E;
+            --color-accent-hover: #2A2A4A;
+            --color-accent-secondary: #E8C547;
+            --color-border: #E4E2DC;
+            --color-success: #1D6B45;
+            --color-success-bg: #E8F5E9;
+            --color-danger: #C0392B;
+            --color-danger-bg: #FDEDEC;
+            --color-warning: #F39C12;
+            --color-warning-bg: #FEF5E7;
+            
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+            --shadow-float: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 10px;
+            --radius-full: 9999px;
+            
+            --transition-fast: 0.15s ease;
+            --transition-normal: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            --sidebar-width: 260px;
+            --header-height: 70px;
+            
+            --font-display: 'Playfair Display', serif;
+            --font-body: 'DM Sans', sans-serif;
+            --font-mono: 'DM Mono', monospace;
+        }
+
+        html.dark {
+            --color-bg: #0D0D10;
+            --color-surface: #16161A;
+            --color-surface-hover: #1E1E24;
+            --color-text-primary: #F0EEE8;
+            --color-text-secondary: #A0A0A5;
+            --color-text-muted: #6B6B70;
+            --color-accent: #E8C547;
+            --color-accent-hover: #F2D56D;
+            --color-accent-secondary: #1A1A2E;
+            --color-border: #2A2A30;
+            --color-success: #2ECC71;
+            --color-success-bg: rgba(46, 204, 113, 0.1);
+            --color-danger: #E74C3C;
+            --color-danger-bg: rgba(231, 76, 60, 0.1);
+            --color-warning: #F1C40F;
+            --color-warning-bg: rgba(241, 196, 15, 0.1);
+            
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.5);
+            --shadow-float: 0 20px 30px rgba(0,0,0,0.6);
+        }
+
+        /* === RESET & BASE === */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--color-bg);
+            color: var(--color-text-primary);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            overflow: hidden; /* App takes full screen, content scrolls */
+            transition: background-color var(--transition-normal), color var(--transition-normal);
+            font-size: 14px;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            line-height: 1.2;
+            color: var(--color-text-primary);
+        }
+
+        a { text-decoration: none; color: inherit; }
+        ul { list-style: none; }
+        button, input, select, textarea { 
+            font-family: inherit; 
+            font-size: inherit;
+            outline: none;
+            border: none;
+            background: none;
+        }
+        
+        button { cursor: pointer; }
+
+        /* === LAYOUT === */
+        #app {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* === SIDEBAR === */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--color-surface);
+            border-right: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            transition: transform var(--transition-normal), background-color var(--transition-normal);
+            z-index: 50;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-size: 28px;
+            font-style: italic;
+            font-weight: 700;
+            color: var(--color-accent);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .logo svg { width: 24px; height: 24px; fill: var(--color-accent-secondary); }
+        html.dark .logo svg { fill: var(--color-text-primary); }
+
+        .logo-sub {
+            font-size: 11px;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+        }
+
+        .nav-menu {
+            flex-grow: 1;
+            padding: 20px 12px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            color: var(--color-text-secondary);
+            font-weight: 500;
+            transition: all var(--transition-fast);
+            position: relative;
+        }
+
+        .nav-item:hover {
+            background-color: var(--color-surface-hover);
+            color: var(--color-text-primary);
+        }
+
+        .nav-item.active {
+            background-color: rgba(26, 26, 46, 0.05);
+            color: var(--color-accent);
+            font-weight: 700;
+        }
+        
+        html.dark .nav-item.active {
+            background-color: rgba(232, 197, 71, 0.1);
+        }
+
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 20px;
+            background-color: var(--color-accent);
+            border-radius: 0 4px 4px 0;
+        }
+
+        .nav-item svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        .sidebar-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-full);
+            background-color: var(--color-surface-hover);
+            color: var(--color-text-primary);
+            transition: all var(--transition-fast);
+        }
+        .theme-toggle:hover { background-color: var(--color-border); }
+
+        /* === MAIN CONTENT === */
+        .main-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .header {
+            height: var(--header-height);
+            background-color: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            z-index: 40;
+            transition: background-color var(--transition-normal);
+        }
+
+        .breadcrumb {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .bank-badge {
+            background-color: var(--color-bg);
+            border: 1px solid var(--color-border);
+            padding: 6px 16px;
+            border-radius: var(--radius-full);
+            font-family: var(--font-mono);
+            font-weight: 500;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        .bank-badge.highlight {
+            background-color: var(--color-success-bg);
+            border-color: var(--color-success);
+            color: var(--color-success);
+        }
+
+        .content-area {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 32px;
+            scroll-behavior: smooth;
+        }
+
+        .page { display: none; animation: fadeIn 0.3s ease forwards; }
+        .page.active { display: block; }
+
+        /* === UI COMPONENTS === */
+        .card {
+            background-color: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+        }
+        
+        .card.hoverable:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .grid { display: grid; }
+        .grid-2 { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+        .grid-3 { grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        .grid-4 { grid-template-columns: repeat(4, 1fr); gap: 24px; }
+        
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; } .gap-6 { gap: 24px; }
+
+        /* Typography utils */
+        .text-muted { color: var(--color-text-muted); }
+        .text-sm { font-size: 12px; }
+        .text-lg { font-size: 18px; }
+        .text-xl { font-size: 24px; }
+        .font-mono { font-family: var(--font-mono); }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-success { color: var(--color-success); }
+        .text-danger { color: var(--color-danger); }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 14px;
+            transition: all var(--transition-fast);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .btn-primary {
+            background-color: var(--color-accent);
+            color: var(--color-surface);
+        }
+        html.light .btn-primary { color: #fff; }
+        html.dark .btn-primary { color: var(--color-accent-secondary); }
+        
+        .btn-primary:hover:not(:disabled) {
+            background-color: var(--color-accent-hover);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background-color: var(--color-accent-secondary);
+            color: #000;
+        }
+        .btn-secondary:hover:not(:disabled) { transform: scale(1.02); }
+
+        .btn-outline {
+            border: 1px solid var(--color-border);
+            background: transparent;
+            color: var(--color-text-primary);
+        }
+        .btn-outline:hover:not(:disabled) { background-color: var(--color-surface-hover); }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--color-text-secondary);
+            padding: 8px 12px;
+        }
+        .btn-ghost:hover:not(:disabled) {
+            background-color: var(--color-surface-hover);
+            color: var(--color-text-primary);
+        }
+        
+        .btn-full { width: 100%; }
+
+        /* Forms */
+        .form-group { margin-bottom: 20px; position: relative; }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--color-text-primary);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            background-color: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            color: var(--color-text-primary);
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+            font-family: var(--font-mono);
+        }
+        
+        .form-control::placeholder { color: var(--color-text-muted); font-family: var(--font-body); }
+        .form-control:focus {
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px rgba(26, 26, 46, 0.1);
+        }
+        html.dark .form-control:focus { box-shadow: 0 0 0 3px rgba(232, 197, 71, 0.2); }
+
+        .form-control.error { border-color: var(--color-danger); }
+        
+        .form-hint {
+            display: block;
+            margin-top: 6px;
+            font-size: 11px;
+            color: var(--color-text-muted);
+        }
+        .error-text { color: var(--color-danger); font-size: 11px; margin-top: 4px; display: none; }
+
+        /* Input Groups (Prefix/Suffix) */
+        .input-group { position: relative; display: flex; align-items: center; }
+        .input-prefix {
+            position: absolute;
+            left: 16px;
+            color: var(--color-text-muted);
+            font-weight: 500;
+            pointer-events: none;
+        }
+        .input-group .form-control.has-prefix { padding-left: 40px; }
+        
+        /* Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            height: 24px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: var(--color-accent);
+            cursor: pointer;
+            margin-top: -7px;
+            box-shadow: var(--shadow-sm);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: var(--color-border);
+            border-radius: 2px;
+        }
+        
+        /* Radio / Checkbox Custom */
+        .radio-group { display: flex; gap: 16px; flex-wrap: wrap; }
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .radio-label input { accent-color: var(--color-accent); width: 16px; height: 16px; }
+
+        /* Badges */
+        .badge {
+            padding: 4px 10px;
+            border-radius: var(--radius-full);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-success { background: var(--color-success-bg); color: var(--color-success); }
+        .badge-danger { background: var(--color-danger-bg); color: var(--color-danger); }
+        .badge-warning { background: var(--color-warning-bg); color: var(--color-warning); }
+        .badge-neutral { background: var(--color-surface-hover); color: var(--color-text-secondary); }
+
+        /* Tables */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        th {
+            background-color: var(--color-bg);
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            border-bottom: 1px solid var(--color-border);
+            white-space: nowrap;
+        }
+        td {
+            padding: 12px 16px;
+            font-size: 13px;
+            border-bottom: 1px solid var(--color-border);
+            color: var(--color-text-primary);
+        }
+        tbody tr { transition: background-color var(--transition-fast); }
+        tbody tr:hover { background-color: var(--color-surface-hover); }
+        tbody tr:last-child td { border-bottom: none; }
+        
+        .progress-bar-bg {
+            width: 100%;
+            height: 6px;
+            background: var(--color-border);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--color-success);
+            transition: width 0.5s ease;
+        }
+
+        /* Toasts */
+        #toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 9999;
+        }
+        .toast {
+            min-width: 300px;
+            background: var(--color-surface);
+            border-left: 4px solid var(--color-accent);
+            box-shadow: var(--shadow-float);
+            padding: 16px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            animation: slideInRight 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        .toast.success { border-color: var(--color-success); }
+        .toast.error { border-color: var(--color-danger); }
+        .toast.warning { border-color: var(--color-warning); }
+        
+        .toast-icon { margin-top: 2px; }
+        .toast-content { flex-grow: 1; }
+        .toast-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+        .toast-msg { font-size: 12px; color: var(--color-text-secondary); }
+        .toast-close { background: none; border: none; color: var(--color-text-muted); cursor: pointer; }
+        
+        .toast.hiding { animation: fadeOutRight 0.3s ease forwards; }
+
+        /* Modals */
+        #modal-container {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        #modal-container.active { opacity: 1; pointer-events: auto; }
+        
+        .modal-content {
+            background: var(--color-surface);
+            width: 90%;
+            max-width: 500px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-float);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        #modal-container.active .modal-content { transform: translateY(0); }
+        
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-family: var(--font-display); font-size: 20px; }
+        .modal-body { padding: 24px; overflow-y: auto; }
+        .modal-footer { padding: 16px 24px; border-top: 1px solid var(--color-border); display: flex; justify-content: flex-end; gap: 12px; }
+
+        /* Specific Page Styles */
+        .simulator-layout { display: grid; grid-template-columns: 350px 1fr; gap: 32px; align-items: start; }
+        .stat-card {
+            background: var(--color-accent);
+            color: var(--color-surface);
+            padding: 24px;
+            border-radius: var(--radius-lg);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        html.light .stat-card { color: #fff; }
+        html.dark .stat-card { background: var(--color-surface-hover); color: var(--color-text-primary); border: 1px solid var(--color-border); }
+        
+        .stat-value { font-family: var(--font-display); font-size: 36px; line-height: 1.1; margin-bottom: 8px; }
+        .stat-label { font-size: 13px; opacity: 0.8; }
+        
+        .metric-box { padding: 16px; background: var(--color-bg); border-radius: var(--radius-md); border: 1px solid var(--color-border); }
+        .metric-label { font-size: 11px; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 4px; }
+        .metric-val { font-family: var(--font-mono); font-size: 18px; font-weight: 500; }
+
+        .tabs { display: flex; border-bottom: 1px solid var(--color-border); margin-bottom: 24px; }
+        .tab-btn {
+            padding: 12px 24px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            border-bottom: 2px solid transparent;
+            transition: all var(--transition-fast);
+        }
+        .tab-btn.active { color: var(--color-accent); border-bottom-color: var(--color-accent); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+
+        .accordion-item { border: 1px solid var(--color-border); border-radius: var(--radius-md); margin-bottom: 12px; overflow: hidden; }
+        .accordion-header { padding: 16px; width: 100%; text-align: left; font-weight: 600; display: flex; justify-content: space-between; align-items: center; background: var(--color-surface); }
+        .accordion-header:hover { background: var(--color-bg); }
+        .accordion-body { padding: 0 16px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; background: var(--color-bg); }
+        .accordion-item.active .accordion-body { padding: 16px; max-height: 500px; border-top: 1px solid var(--color-border); }
+        .accordion-item.active .accordion-header svg { transform: rotate(180deg); }
+
+        .chart-container { position: relative; height: 300px; width: 100%; }
+
+        /* Mobile Menu */
+        .mobile-menu-btn { display: none; background: none; border: none; color: var(--color-text-primary); padding: 8px; }
+        .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 45; opacity: 0; transition: opacity 0.3s; }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 10%, 30%, 50%, 70%, 90% {transform: translateX(-4px);} 20%, 40%, 60%, 80% {transform: translateX(4px);} }
+        .shake { animation: shake 0.5s; }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .simulator-layout { grid-template-columns: 1fr; }
+            .grid-4 { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            :root { --sidebar-width: 280px; }
+            .sidebar { position: fixed; height: 100vh; transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .mobile-menu-btn { display: block; }
+            .mobile-overlay.active { display: block; opacity: 1; }
+            .header { padding: 0 16px; }
+            .content-area { padding: 16px; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .header-actions .btn span { display: none; } /* Hide text on mobile header buttons */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <!-- Sidebar -->
+        <div class="mobile-overlay" id="mobileOverlay"></div>
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+                    OddsLab
+                </div>
+                <div class="logo-sub">Simulador de Banca Profissional</div>
+            </div>
+            
+            <nav class="nav-menu" id="navMenu">
+                <a href="#simulador" class="nav-item active" data-page="simulador">
+                    <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
+                    Simulador
+                </a>
+                <a href="#historico" class="nav-item" data-page="historico">
+                    <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Histórico
+                </a>
+                <a href="#martingale" class="nav-item" data-page="martingale">
+                    <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                    Martingale
+                </a>
+                <a href="#graficos" class="nav-item" data-page="graficos">
+                    <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                    Gráficos
+                </a>
+                <a href="#calculadoras" class="nav-item" data-page="calculadoras">
+                    <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><path d="M8 9h.01M16 9h.01M8 15h.01M12 15h.01M16 15h.01"/></svg>
+                    Calculadoras
+                </a>
+                <a href="#glossario" class="nav-item" data-page="glossario">
+                    <svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+                    Glossário
+                </a>
+                <a href="#configuracoes" class="nav-item" data-page="configuracoes">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                    Configurações
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <span>OddsLab v2.0</span>
+                <button class="theme-toggle" id="themeToggle" title="Alternar Tema">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Wrapper -->
+        <div class="main-wrapper">
+            <!-- Header -->
+            <header class="header">
+                <div class="breadcrumb">
+                    <button class="mobile-menu-btn" id="mobileMenuBtn">
+                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    </button>
+                    <span id="headerTitle">Simulador</span>
+                </div>
+                <div class="header-actions">
+                    <div class="bank-badge" id="globalBankBadge">
+                        <span class="text-muted">Banca:</span>
+                        <span id="globalBankValue" class="currency-val">R$ 0,00</span>
+                    </div>
+                    <button class="btn btn-primary" onclick="window.location.hash='#simulador'">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        <span>Nova Simulação</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <main class="content-area" id="contentArea">
+                
+                <!-- PAGE 1: SIMULADOR -->
+                <section id="page-simulador" class="page active">
+                    <div class="simulator-layout">
+                        <!-- Formulário -->
+                        <div class="card">
+                            <h2 class="text-xl" style="margin-bottom: 24px;">Configurar Simulação</h2>
+                            
+                            <form id="simForm" onsubmit="event.preventDefault();">
+                                <div class="form-group">
+                                    <label class="form-label">Banca Inicial</label>
+                                    <div class="input-group">
+                                        <span class="input-prefix currency-symbol">R$</span>
+                                        <input type="number" id="simBanca" class="form-control has-prefix" min="1" step="0.01" placeholder="Ex: 1000.00" required>
+                                    </div>
+                                    <span class="form-hint">Valor total disponível para apostar</span>
+                                    <span class="error-text" id="err-simBanca">Insira um valor válido.</span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Odd por Entrada</label>
+                                    <input type="number" id="simOdd" class="form-control" min="1.01" step="0.01" placeholder="Ex: 2.00" required>
+                                    <div class="flex justify-between items-center" style="margin-top: 6px;">
+                                        <span class="form-hint">Odds Decimais Europeias</span>
+                                        <span class="badge badge-neutral" id="simProbBadge">Probabilidade: --%</span>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label flex justify-between">
+                                        <span>Stake (% da Banca)</span>
+                                        <span class="font-mono text-accent" id="simPctVal">5%</span>
+                                    </label>
+                                    <input type="range" id="simPct" min="1" max="100" value="5" step="0.5">
+                                    <div class="flex justify-between items-center" style="margin-top: 6px;">
+                                        <span class="form-hint">Gestão recomendada: 1% a 5% · Máximo permitido: 100%</span>
+                                        <span class="badge badge-success" id="simRiskBadge">Conservador</span>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label flex justify-between">
+                                        <span>Meta de Lucro</span>
+                                        <label class="radio-label text-sm" style="font-weight:normal;">
+                                            <input type="checkbox" id="simMetaIsPct"> Meta em %
+                                        </label>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-prefix" id="simMetaPrefix">R$</span>
+                                        <input type="number" id="simMeta" class="form-control has-prefix" min="1" step="0.01" placeholder="Ex: 3000.00" required>
+                                    </div>
+                                    <span class="form-hint">Lucro limpo desejado</span>
+                                </div>
+
+                                <div class="form-group" style="margin-bottom: 32px;">
+                                    <label class="form-label">Estratégia de Stake</label>
+                                    <div class="radio-group">
+                                        <label class="radio-label"><input type="radio" name="simStrategy" value="percent" checked> % Fixo (Juros Compostos)</label>
+                                        <label class="radio-label"><input type="radio" name="simStrategy" value="fixed"> Valor Fixo (R$)</label>
+                                        <label class="radio-label" title="Assume 5% de margem de erro na probabilidade"><input type="radio" name="simStrategy" value="kelly"> Critério de Kelly</label>
+                                    </div>
+                                </div>
+
+                                <div class="flex gap-4">
+                                    <button type="button" class="btn btn-outline" id="btnSimClear" style="flex: 1;">Limpar</button>
+                                    <button type="button" class="btn btn-primary" id="btnSimCalc" style="flex: 2;">
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                        Calcular Projeção
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Resultados -->
+                        <div class="flex-col gap-6" id="simResultsArea" style="display: none; opacity: 0; transition: opacity 0.3s ease;">
+                            
+                            <!-- Main Highlight -->
+                            <div class="stat-card">
+                                <div class="stat-value" id="resEntries">--</div>
+                                <div class="stat-label">entradas seguidas (green) necessárias para atingir a meta</div>
+                            </div>
+
+                            <!-- Metrics Grid -->
+                            <div class="grid grid-2">
+                                <div class="metric-box">
+                                    <div class="metric-label">Lucro Projetado</div>
+                                    <div class="metric-val text-success currency-val" id="resProfit">R$ 0,00</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-label">Banca Final</div>
+                                    <div class="metric-val currency-val" id="resFinalBank">R$ 0,00</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-label">ROI Total</div>
+                                    <div class="metric-val text-accent" id="resROI">0,00%</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-label">1ª Stake / Última Stake</div>
+                                    <div class="metric-val" style="font-size: 14px;"><span class="currency-val" id="resStake1">R$ 0</span> <span class="text-muted">→</span> <span class="currency-val" id="resStakeN">R$ 0</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="flex gap-4 justify-between" style="padding: 8px 0;">
+                                <div>
+                                    <button class="btn btn-ghost text-sm" id="btnSimShare">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+                                        Copiar Link
+                                    </button>
+                                </div>
+                                <div class="flex gap-3">
+                                    <button class="btn btn-outline text-sm" id="btnSimExport">↓ Exportar CSV</button>
+                                    <button class="btn btn-secondary text-sm" id="btnSimSave">💾 Salvar Histórico</button>
+                                </div>
+                            </div>
+
+                            <!-- Table -->
+                            <div class="card" style="padding: 0; overflow: hidden;">
+                                <div class="table-container" style="border: none; max-height: 400px; overflow-y: auto;">
+                                    <table id="simTable">
+                                        <thead style="position: sticky; top: 0; z-index: 10;">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Banca Disp.</th>
+                                                <th>Stake</th>
+                                                <th>Retorno</th>
+                                                <th>Lucro Acum.</th>
+                                                <th>Progresso</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="simTableBody">
+                                            <!-- Rows rendered by JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div id="simTableWarning" style="padding: 12px; text-align: center; font-size: 12px; color: var(--color-warning); background: var(--color-warning-bg); display: none;">
+                                    Exibindo apenas as primeiras 1000 entradas.
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAGE 2: HISTÓRICO -->
+                <section id="page-historico" class="page">
+                    <div class="flex-col gap-6">
+                        
+                        <div class="grid grid-4" id="histStatsGrid">
+                            <div class="metric-box"><div class="metric-label">Simulações Salvas</div><div class="metric-val" id="statHistCount">0</div></div>
+                            <div class="metric-box"><div class="metric-label">ROI Médio</div><div class="metric-val text-success" id="statHistAvgRoi">0%</div></div>
+                            <div class="metric-box"><div class="metric-label">Maior Lucro</div><div class="metric-val currency-val" id="statHistMaxProfit">R$ 0</div></div>
+                            <div class="metric-box"><div class="metric-label">Odd Média</div><div class="metric-val" id="statHistAvgOdd">0.00</div></div>
+                        </div>
+
+                        <div class="card">
+                            <div class="flex justify-between items-center" style="margin-bottom: 20px; flex-wrap: wrap; gap: 16px;">
+                                <div class="input-group" style="width: 300px;">
+                                    <span class="input-prefix">🔍</span>
+                                    <input type="text" id="histSearch" class="form-control has-prefix" placeholder="Buscar por valor, odd...">
+                                </div>
+                                <div class="flex gap-4">
+                                    <button class="btn btn-outline" id="btnHistClearAll">🗑 Limpar Tudo</button>
+                                    <button class="btn btn-primary" id="btnHistExportAll">↓ Exportar JSON</button>
+                                </div>
+                            </div>
+
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Data</th>
+                                            <th>Banca Ini.</th>
+                                            <th>Odd</th>
+                                            <th>Estratégia</th>
+                                            <th>Entradas</th>
+                                            <th>ROI</th>
+                                            <th style="text-align: right;">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="histTableBody">
+                                        <!-- Rendered by JS -->
+                                        <tr><td colspan="7" class="text-center text-muted" style="padding: 32px;">Nenhum histórico encontrado. Salve simulações na aba principal.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAGE 3: MARTINGALE -->
+                <section id="page-martingale" class="page">
+                    <div class="card" style="margin-bottom: 24px; background: var(--color-surface-hover);">
+                        <h3 class="text-lg flex items-center gap-2" style="margin-bottom: 8px;">
+                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="var(--color-warning)" stroke-width="2" fill="none"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            Análise de Risco: Martingale
+                        </h3>
+                        <p class="text-muted text-sm">O Martingale consiste em dobrar a aposta após cada perda. Esta ferramenta projeta o colapso da banca sob sequências negativas.</p>
+                    </div>
+
+                    <div class="simulator-layout">
+                        <div class="card">
+                            <form id="martForm">
+                                <div class="form-group">
+                                    <label class="form-label">Banca Total</label>
+                                    <div class="input-group">
+                                        <span class="input-prefix currency-symbol">R$</span>
+                                        <input type="number" id="martBanca" class="form-control has-prefix" value="1000" min="1">
+                                    </div>
+                                </div>
+                                <div class="grid grid-2">
+                                    <div class="form-group">
+                                        <label class="form-label">Stake Inicial</label>
+                                        <div class="input-group">
+                                            <span class="input-prefix currency-symbol">R$</span>
+                                            <input type="number" id="martStake" class="form-control has-prefix" value="10" min="0.1" step="0.1">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Odd</label>
+                                        <input type="number" id="martOdd" class="form-control" value="2.00" min="1.01" step="0.01">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Multiplicador na Perda</label>
+                                    <input type="number" id="martMult" class="form-control" value="2.00" min="1.1" step="0.1">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label flex justify-between">
+                                        <span>Máx. Red Seguidos (Simulação)</span>
+                                        <span id="martStepsVal" class="font-mono">8</span>
+                                    </label>
+                                    <input type="range" id="martSteps" min="3" max="20" value="8">
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="flex-col gap-6">
+                            <div class="card" id="martRiskCard" style="border-left: 6px solid var(--color-success);">
+                                <h4 class="text-lg" id="martRiskTitle">Risco Calculado</h4>
+                                <p class="text-sm" id="martRiskText" style="margin-top: 8px;">Aguardando dados...</p>
+                            </div>
+
+                            <div class="card" style="padding:0; overflow:hidden;">
+                                <div class="table-container" style="border:none;">
+                                    <table>
+                                        <thead><tr><th>Red Seguidos</th><th>Stake Necessária</th><th>Perda Acumulada</th><th>Banca Restante</th><th>Status</th></tr></thead>
+                                        <tbody id="martTableBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAGE 4: GRÁFICOS -->
+                <section id="page-graficos" class="page">
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="flex justify-between items-center" style="flex-wrap: wrap; gap: 16px;">
+                            <div style="flex:1; min-width: 250px;">
+                                <label class="form-label">Fonte de Dados</label>
+                                <select id="chartSourceSelect" class="form-control">
+                                    <option value="current">Simulação Atual (em memória)</option>
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
+                            <div>
+                                <button class="btn btn-outline" id="btnRunMonteCarlo">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                                    Rodar Monte Carlo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-2" style="margin-bottom: 24px;">
+                        <div class="card">
+                            <h3 class="text-lg" style="margin-bottom: 16px;">Crescimento da Banca</h3>
+                            <div class="chart-container"><canvas id="chartGrowth"></canvas></div>
+                        </div>
+                        <div class="card">
+                            <h3 class="text-lg" style="margin-bottom: 16px;">Evolução da Stake</h3>
+                            <div class="chart-container"><canvas id="chartStake"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="card" id="monteCarloContainer" style="display: none;">
+                        <h3 class="text-lg" style="margin-bottom: 8px;">Simulação de Monte Carlo (100 cenários reais)</h3>
+                        <p class="text-sm text-muted" style="margin-bottom: 16px;">Projeção com base na probabilidade de acerto da odd (Win/Loss aleatório).</p>
+                        <div class="chart-container" style="height: 400px;"><canvas id="chartMonteCarlo"></canvas></div>
+                        <div class="grid grid-3" style="margin-top: 16px;" id="mcStats">
+                            <!-- JS fills this -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAGE 5: CALCULADORAS -->
+                <section id="page-calculadoras" class="page">
+                    <div class="card" style="padding: 0; overflow: hidden;">
+                        <div class="tabs">
+                            <button class="tab-btn active" data-target="calc-odds">Conv. Odds</button>
+                            <button class="tab-btn" data-target="calc-value">Value Bet</button>
+                            <button class="tab-btn" data-target="calc-kelly">Kelly Criterion</button>
+                            <button class="tab-btn" data-target="calc-dutching">Dutching</button>
+                        </div>
+                        
+                        <div class="padding-24" style="padding: 24px;">
+                            <!-- Tab: Odds -->
+                            <div id="calc-odds" class="tab-content active">
+                                <h3 class="text-lg" style="margin-bottom: 16px;">Conversor Universal de Odds</h3>
+                                <div class="grid grid-3">
+                                    <div class="form-group">
+                                        <label class="form-label">Decimal (Europa)</label>
+                                        <input type="number" id="cOddDec" class="form-control calc-input" placeholder="Ex: 2.50">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Fracionária (UK)</label>
+                                        <input type="text" id="cOddFra" class="form-control calc-input" placeholder="Ex: 3/2">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Americana (EUA)</label>
+                                        <input type="number" id="cOddAm" class="form-control calc-input" placeholder="Ex: +150 ou -120">
+                                    </div>
+                                </div>
+                                <div class="stat-card" style="margin-top: 16px;">
+                                    <div class="stat-label">Probabilidade Implícita</div>
+                                    <div class="stat-value" id="cOddProb">--%</div>
+                                </div>
+                            </div>
+
+                            <!-- Tab: Value Bet -->
+                            <div id="calc-value" class="tab-content">
+                                <h3 class="text-lg" style="margin-bottom: 16px;">Calculadora de EV+ (Value Bet)</h3>
+                                <div class="grid grid-2">
+                                    <div class="form-group">
+                                        <label class="form-label">Odd Oferecida pela Casa</label>
+                                        <input type="number" id="cValOdd" class="form-control" placeholder="2.00" step="0.01">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Probabilidade Real Estimada (%)</label>
+                                        <input type="number" id="cValProb" class="form-control" placeholder="55" max="100">
+                                    </div>
+                                </div>
+                                <div id="cValResult" class="metric-box" style="margin-top: 16px; text-align: center;">
+                                    Preencha os valores para calcular.
+                                </div>
+                            </div>
+
+                            <!-- Tab: Kelly -->
+                            <div id="calc-kelly" class="tab-content">
+                                <h3 class="text-lg" style="margin-bottom: 16px;">Critério de Kelly Otimizado</h3>
+                                <div class="grid grid-2">
+                                    <div class="form-group">
+                                        <label class="form-label">Odd Decimal</label>
+                                        <input type="number" id="cKelOdd" class="form-control" placeholder="2.00">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Sua % de Acerto Real</label>
+                                        <input type="number" id="cKelProb" class="form-control" placeholder="55">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label flex justify-between"><span>Fração de Kelly</span><span id="cKelFracVal">1 (Full)</span></label>
+                                    <input type="range" id="cKelFrac" min="0.1" max="1" step="0.1" value="1">
+                                    <span class="form-hint">Recomendado: 0.25 a 0.5 para reduzir variância</span>
+                                </div>
+                                <div class="stat-card" style="margin-top: 16px; background: var(--color-bg); color: var(--color-text-primary); border: 1px solid var(--color-border);">
+                                    <div class="stat-label">Stake Recomendada</div>
+                                    <div class="stat-value text-accent" id="cKelResult">--% da Banca</div>
+                                </div>
+                            </div>
+
+                            <!-- Tab: Dutching -->
+                            <div id="calc-dutching" class="tab-content">
+                                <h3 class="text-lg" style="margin-bottom: 16px;">Dutching (Cobertura com Lucro Igual)</h3>
+                                <div class="form-group" style="max-width: 300px;">
+                                    <label class="form-label">Banca Total a Distribuir</label>
+                                    <div class="input-group">
+                                        <span class="input-prefix currency-symbol">R$</span>
+                                        <input type="number" id="cDutBank" class="form-control has-prefix" value="100">
+                                    </div>
+                                </div>
+                                <div class="grid grid-3" id="cDutInputs" style="margin-bottom: 16px;">
+                                    <!-- Generated 3 inputs default -->
+                                </div>
+                                <button class="btn btn-outline btn-sm" id="btnDutAdd" style="margin-bottom: 16px;">+ Adicionar Seleção</button>
+                                <div class="table-container">
+                                    <table>
+                                        <thead><tr><th>Seleção</th><th>Odd</th><th>Apostar</th><th>Lucro Líquido</th></tr></thead>
+                                        <tbody id="cDutBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAGE 6: CONFIGURAÇÕES -->
+                <section id="page-configuracoes" class="page">
+                    <div class="grid grid-2">
+                        <div class="flex-col gap-6">
+                            <div class="card">
+                                <h3 class="text-lg" style="margin-bottom: 16px;">Preferências Regionais</h3>
+                                <div class="form-group">
+                                    <label class="form-label">Moeda</label>
+                                    <select id="cfgCurrency" class="form-control">
+                                        <option value="BRL">R$ (Real Brasileiro)</option>
+                                        <option value="USD">$ (Dólar)</option>
+                                        <option value="EUR">€ (Euro)</option>
+                                        <option value="GBP">£ (Libra)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Formato Numérico</label>
+                                    <select id="cfgFormat" class="form-control">
+                                        <option value="pt-BR">1.000,00 (Brasil)</option>
+                                        <option value="en-US">1,000.00 (Internacional)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <h3 class="text-lg text-danger" style="margin-bottom: 16px;">Gerenciamento de Dados</h3>
+                                <p class="text-sm text-muted" style="margin-bottom: 16px;">Todos os seus dados são salvos localmente no seu navegador. Nenhuma informação é enviada para servidores.</p>
+                                <div class="flex gap-4">
+                                    <button class="btn btn-outline" id="btnCfgExport">Exportar Backup (JSON)</button>
+                                    <!-- Hidden file input -->
+                                    <input type="file" id="cfgImportFile" accept=".json" style="display:none">
+                                    <button class="btn btn-outline" onclick="document.getElementById('cfgImportFile').click()">Importar Backup</button>
+                                </div>
+                                <hr style="border:0; border-top: 1px solid var(--color-border); margin: 24px 0;">
+                                <button class="btn btn-outline text-danger" id="btnCfgReset" style="border-color: var(--color-danger);">Resetar Todos os Dados</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAGE 7: GLOSSÁRIO -->
+                <section id="page-glossario" class="page">
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="input-group">
+                            <span class="input-prefix">🔍</span>
+                            <input type="text" id="glosSearch" class="form-control has-prefix" placeholder="Buscar termos (ex: ROI, Drawdown, Yield...)">
+                        </div>
+                    </div>
+                    <div id="glosContainer">
+                        <!-- JS renders accordions here -->
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- UI Containers -->
+    <div id="toast-container"></div>
+    
+    <div id="modal-container">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Título</h3>
+                <button class="btn-ghost" onclick="UI.closeModal()">✕</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer" id="modalFooter">
+                <button class="btn btn-outline" onclick="UI.closeModal()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === SECTION: STATE MANAGEMENT & CONFIG ===
+        
+        const DEFAULT_CONFIG = {
+            currency: 'BRL',
+            locale: 'pt-BR',
+            theme: 'light',
+            simDefaultPct: 5,
+            simDefaultStrategy: 'percent'
+        };
+
+        const AppState = {
+            config: { ...DEFAULT_CONFIG },
+            history: [],
+            currentSim: null, // holds last run calculation
+            
+            init() {
+                const stored = localStorage.getItem('oddslab_state');
+                if (stored) {
+                    try {
+                        const parsed = JSON.parse(stored);
+                        this.config = { ...this.config, ...(parsed.config || {}) };
+                        this.history = parsed.history || [];
+                    } catch (e) {
+                        console.error("Corrupted state in localStorage", e);
+                    }
+                }
+                this.applyTheme();
+            },
+            
+            save() {
+                localStorage.setItem('oddslab_state', JSON.stringify({
+                    config: this.config,
+                    history: this.history
+                }));
+            },
+
+            addHistory(simData) {
+                simData.id = Date.now().toString();
+                simData.date = new Date().toISOString();
+                this.history.unshift(simData);
+                this.save();
+                UI.showToast("Simulação salva no histórico!", "success");
+            },
+
+            clearHistory() {
+                this.history = [];
+                this.save();
+            },
+
+            applyTheme() {
+                const html = document.documentElement;
+                if (this.config.theme === 'dark') {
+                    html.classList.remove('light');
+                    html.classList.add('dark');
+                } else {
+                    html.classList.remove('dark');
+                    html.classList.add('light');
+                }
+                // Refresh charts if they exist to match theme colors
+                if(window.ChartInstances) {
+                     ChartModule.applyThemeColors();
+                     ChartModule.renderAll();
+                }
+            },
+
+            toggleTheme() {
+                this.config.theme = this.config.theme === 'light' ? 'dark' : 'light';
+                this.applyTheme();
+                this.save();
+            }
+        };
+
+        // === SECTION: UTILITIES ===
+        const Utils = {
+            getCurrencySymbol() {
+                const map = { 'BRL': 'R$', 'USD': '$', 'EUR': '€', 'GBP': '£' };
+                return map[AppState.config.currency] || 'R$';
+            },
+
+            formatCurrency(value) {
+                if(isNaN(value) || !isFinite(value)) return `${this.getCurrencySymbol()} 0,00`;
+                return new Intl.NumberFormat(AppState.config.locale, {
+                    style: 'currency',
+                    currency: AppState.config.currency,
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(value);
+            },
+
+            formatNumber(value, decimals = 2) {
+                if(isNaN(value) || !isFinite(value)) return "0";
+                return new Intl.NumberFormat(AppState.config.locale, {
+                    minimumFractionDigits: decimals,
+                    maximumFractionDigits: decimals
+                }).format(value);
+            },
+
+            formatDate(isoString) {
+                const d = new Date(isoString);
+                return new Intl.DateTimeFormat(AppState.config.locale, {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute:'2-digit'
+                }).format(d);
+            },
+
+            calcImplicitProb(odd) {
+                if (odd <= 1) return 0;
+                return (1 / odd) * 100;
+            },
+
+            calcKelly(probPct, oddDec, fraction = 1) {
+                const b = oddDec - 1; // decimal odds - 1
+                const p = probPct / 100;
+                const q = 1 - p;
+                const f = (b * p - q) / b;
+                return Math.max(0, f * fraction * 100); // return as %
+            },
+
+            downloadCSV(content, filename) {
+                const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            },
+            
+            updateCurrencySymbols() {
+                const sym = this.getCurrencySymbol();
+                document.querySelectorAll('.currency-symbol').forEach(el => el.textContent = sym);
+            }
+        };
+
+        const UI = {
+            toastContainer: null,
+            modalContainer: null,
+
+            init() {
+                this.toastContainer = document.getElementById('toast-container');
+                this.modalContainer = document.getElementById('modal-container');
+                
+                // Close modal on outside click
+                this.modalContainer.addEventListener('click', (e) => {
+                    if(e.target === this.modalContainer) this.closeModal();
+                });
+                
+                // Escape key
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') this.closeModal();
+                });
+            },
+
+            showToast(message, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                
+                let icon = '';
+                if(type === 'success') icon = '<svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+                if(type === 'error') icon = '<svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+                if(type === 'warning') icon = '<svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+
+                toast.innerHTML = `
+                    <div class="toast-icon text-${type}">${icon}</div>
+                    <div class="toast-content">
+                        <div class="toast-title">${type.charAt(0).toUpperCase() + type.slice(1)}</div>
+                        <div class="toast-msg">${message}</div>
+                    </div>
+                    <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+                `;
+                
+                this.toastContainer.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.classList.add('hiding');
+                    setTimeout(() => toast.remove(), 300);
+                }, 4000);
+            },
+
+            openModal(title, bodyHTML, footerHTML = null) {
+                document.getElementById('modalTitle').textContent = title;
+                document.getElementById('modalBody').innerHTML = bodyHTML;
+                if(footerHTML) {
+                    document.getElementById('modalFooter').innerHTML = footerHTML;
+                    document.getElementById('modalFooter').style.display = 'flex';
+                } else {
+                    document.getElementById('modalFooter').style.display = 'none';
+                }
+                this.modalContainer.classList.add('active');
+            },
+
+            closeModal() {
+                this.modalContainer.classList.remove('active');
+            },
+            
+            confirm(msg, onConfirm) {
+                this.openModal(
+                    "Atenção", 
+                    `<p>${msg}</p>`, 
+                    `<button class="btn btn-outline" onclick="UI.closeModal()">Cancelar</button>
+                     <button class="btn btn-primary" id="btnConfirmModal">Confirmar</button>`
+                );
+                document.getElementById('btnConfirmModal').onclick = () => {
+                    onConfirm();
+                    this.closeModal();
+                };
+            },
+            
+            animateNumber(element, finalValue, formatter, duration = 500) {
+                let start = null;
+                const initialText = element.textContent.replace(/[^0-9.-]+/g, "");
+                const initialValue = parseFloat(initialText) || 0;
+                
+                if(initialValue === finalValue) {
+                    element.textContent = formatter(finalValue);
+                    return;
+                }
+
+                const step = (timestamp) => {
+                    if (!start) start = timestamp;
+                    const progress = Math.min((timestamp - start) / duration, 1);
+                    // easeOutQuart
+                    const ease = 1 - Math.pow(1 - progress, 4);
+                    const current = initialValue + (finalValue - initialValue) * ease;
+                    element.textContent = formatter(current);
+                    if (progress < 1) window.requestAnimationFrame(step);
+                    else element.textContent = formatter(finalValue);
+                };
+                window.requestAnimationFrame(step);
+            }
+        };
+
+        // === SECTION: ROUTER ===
+        const Router = {
+            init() {
+                window.addEventListener('hashchange', () => this.handleRoute());
+                this.handleRoute(); // initial load
+            },
+
+            handleRoute() {
+                let hash = window.location.hash || '#simulador';
+                const pageId = `page-${hash.substring(1)}`;
+                const targetPage = document.getElementById(pageId);
+
+                if (targetPage) {
+                    // Update Nav
+                    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+                    const navItem = document.querySelector(`.nav-item[href="${hash}"]`);
+                    if(navItem) {
+                        navItem.classList.add('active');
+                        document.getElementById('headerTitle').textContent = navItem.textContent.trim();
+                    }
+
+                    // Update Pages
+                    document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+                    targetPage.classList.add('active');
+                    
+                    // Close mobile menu on navigate
+                    document.getElementById('sidebar').classList.remove('open');
+                    document.getElementById('mobileOverlay').classList.remove('active');
+                    
+                    // Page specific renders
+                    if(hash === '#historico') HistoryModule.render();
+                    if(hash === '#graficos') ChartModule.init();
+                    
+                    window.scrollTo(0, 0);
+                }
+            }
+        };
+
+        // === SECTION: MODULE 1 - SIMULATOR ===
+        const SimulatorModule = {
+            MAX_ITERATIONS: 10000,
+            
+            init() {
+                this.bindEvents();
+                this.checkUrlParams();
+            },
+
+            bindEvents() {
+                const inputs = ['simBanca', 'simOdd', 'simPct', 'simMeta'];
+                inputs.forEach(id => {
+                    document.getElementById(id).addEventListener('input', () => this.validateAndLiveUpdate(id));
+                });
+
+                document.getElementById('simPct').addEventListener('input', (e) => {
+                    document.getElementById('simPctVal').textContent = e.target.value + '%';
+                    this.updateRiskBadge();
+                });
+                
+                document.getElementById('simOdd').addEventListener('input', (e) => {
+                    const odd = parseFloat(e.target.value);
+                    const prob = Utils.calcImplicitProb(odd);
+                    const badge = document.getElementById('simProbBadge');
+                    if(prob > 0) badge.textContent = `Prob: ${Utils.formatNumber(prob, 1)}%`;
+                    else badge.textContent = 'Prob: --%';
+                });
+
+                document.getElementById('simMetaIsPct').addEventListener('change', (e) => {
+                    const prefix = document.getElementById('simMetaPrefix');
+                    const input = document.getElementById('simMeta');
+                    if(e.target.checked) {
+                        prefix.textContent = '%';
+                        input.placeholder = "Ex: 100";
+                    } else {
+                        prefix.textContent = Utils.getCurrencySymbol();
+                        input.placeholder = "Ex: 3000.00";
+                    }
+                    this.validateAndLiveUpdate();
+                });
+
+                document.getElementsByName('simStrategy').forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        const isKelly = e.target.value === 'kelly';
+                        const pctInput = document.getElementById('simPct');
+                        pctInput.disabled = isKelly;
+                        if(isKelly) {
+                            pctInput.parentElement.style.opacity = '0.5';
+                            UI.showToast("Critério de Kelly ativado. O % será dinâmico baseado na Odd.", "info");
+                        } else {
+                            pctInput.parentElement.style.opacity = '1';
+                        }
+                        this.validateAndLiveUpdate();
+                    });
+                });
+
+                document.getElementById('btnSimCalc').addEventListener('click', () => this.runSimulation());
+                document.getElementById('btnSimClear').addEventListener('click', () => {
+                    document.getElementById('simForm').reset();
+                    document.getElementById('simResultsArea').style.display = 'none';
+                    document.getElementById('simPctVal').textContent = '5%';
+                });
+                
+                document.getElementById('btnSimSave').addEventListener('click', () => {
+                    if(AppState.currentSim) AppState.addHistory(AppState.currentSim);
+                });
+                
+                document.getElementById('btnSimExport').addEventListener('click', () => this.exportCSV());
+                document.getElementById('btnSimShare').addEventListener('click', () => this.shareLink());
+            },
+            
+            updateRiskBadge() {
+                const pct = parseFloat(document.getElementById('simPct').value) || 0;
+                const badge = document.getElementById('simRiskBadge');
+                if(pct <= 5) { badge.className = 'badge badge-success'; badge.textContent = 'Conservador'; }
+                else if(pct <= 15) { badge.className = 'badge badge-warning'; badge.textContent = 'Moderado'; }
+                else if(pct <= 40) { badge.className = 'badge badge-danger'; badge.textContent = 'Agressivo'; }
+                else if(pct <= 75) { badge.className = 'badge badge-danger'; badge.textContent = 'Muito Agressivo'; }
+                else { badge.className = 'badge badge-danger'; badge.textContent = '⚠ Risco Extremo'; }
+            },
+
+            validateAndLiveUpdate(changedId) {
+                // Remove error classes
+                document.querySelectorAll('.form-control.error').forEach(el => el.classList.remove('error'));
+                document.querySelectorAll('.error-text').forEach(el => el.style.display = 'none');
+                
+                let isValid = true;
+                const banca = parseFloat(document.getElementById('simBanca').value);
+                const odd = parseFloat(document.getElementById('simOdd').value);
+                const meta = parseFloat(document.getElementById('simMeta').value);
+
+                if(changedId === 'simBanca' && (isNaN(banca) || banca <= 0)) { document.getElementById('simBanca').classList.add('error'); isValid = false; }
+                if(changedId === 'simOdd' && (isNaN(odd) || odd <= 1)) { document.getElementById('simOdd').classList.add('error'); isValid = false; }
+                if(changedId === 'simMeta' && (isNaN(meta) || meta <= 0)) { document.getElementById('simMeta').classList.add('error'); isValid = false; }
+
+                document.getElementById('btnSimCalc').disabled = !isValid;
+                return isValid;
+            },
+
+            calculateEngine(bancaIni, odd, pctFixo, metaVal, strategy, isMetaPct) {
+                let currentBank = bancaIni;
+                let metaAbsoluta = isMetaPct ? bancaIni * (1 + (metaVal / 100)) : bancaIni + metaVal;
+                let entries = [];
+                let iteration = 0;
+                let totalProfit = 0;
+                
+                // Kelly specifics: assume 5% edge for simulation purposes if not specified
+                const assumedEdgePct = 5; 
+                const realProb = Utils.calcImplicitProb(odd) + assumedEdgePct;
+
+                while (currentBank < metaAbsoluta && iteration < this.MAX_ITERATIONS && currentBank > 0) {
+                    iteration++;
+                    let stake = 0;
+
+                    if (strategy === 'percent') {
+                        stake = currentBank * (pctFixo / 100);
+                    } else if (strategy === 'fixed') {
+                        stake = bancaIni * (pctFixo / 100);
+                    } else if (strategy === 'kelly') {
+                        const kPct = Utils.calcKelly(realProb, odd) / 100;
+                        stake = currentBank * kPct;
+                        // limit kelly to max 100% in simulation
+                        if(stake > currentBank * 1.0) stake = currentBank * 1.0;
+                    }
+
+                    // Prevent staking more than needed to hit target
+                    const profitNeeded = metaAbsoluta - currentBank;
+                    const stakeNeededToHitTarget = profitNeeded / (odd - 1);
+                    if (stake > stakeNeededToHitTarget) {
+                        stake = stakeNeededToHitTarget;
+                    }
+                    
+                    // Bankruptcy protection
+                    if(stake > currentBank) stake = currentBank;
+                    if(stake < 0.01) break; // Bankrupted essentially
+
+                    const returnVal = stake * odd;
+                    const profit = returnVal - stake;
+                    
+                    currentBank += profit;
+                    totalProfit += profit;
+                    
+                    const percentToMeta = Math.min(100, ((currentBank - bancaIni) / (metaAbsoluta - bancaIni)) * 100);
+
+                    entries.push({
+                        iteration: iteration,
+                        bancaPre: currentBank - profit,
+                        stake: stake,
+                        retorno: returnVal,
+                        lucroAcum: totalProfit,
+                        bancaPost: currentBank,
+                        percentToMeta: Math.max(0, percentToMeta)
+                    });
+                }
+
+                return {
+                    success: currentBank >= metaAbsoluta,
+                    entriesList: entries,
+                    finalBank: currentBank,
+                    totalProfit: totalProfit,
+                    roi: (totalProfit / bancaIni) * 100,
+                    metaAbsoluta: metaAbsoluta,
+                    bancaIni, odd, pctFixo, strategy
+                };
+            },
+
+            runSimulation() {
+                if(!this.validateAndLiveUpdate()) return;
+
+                const bancaIni = parseFloat(document.getElementById('simBanca').value);
+                const odd = parseFloat(document.getElementById('simOdd').value);
+                const pctFixo = parseFloat(document.getElementById('simPct').value);
+                const metaVal = parseFloat(document.getElementById('simMeta').value);
+                const isMetaPct = document.getElementById('simMetaIsPct').checked;
+                const strategy = document.querySelector('input[name="simStrategy"]:checked').value;
+
+                if(!bancaIni || !odd || !metaVal) {
+                    UI.showToast("Preencha todos os campos corretamente.", "error");
+                    return;
+                }
+
+                const btn = document.getElementById('btnSimCalc');
+                btn.innerHTML = '<span class="loading-spin" style="display:inline-block; animation: spin 1s linear infinite;">↻</span> Calculando...';
+                btn.disabled = true;
+
+                // Simulate slight delay for UX
+                setTimeout(() => {
+                    const result = this.calculateEngine(bancaIni, odd, pctFixo, metaVal, strategy, isMetaPct);
+                    AppState.currentSim = result;
+                    this.renderResults(result);
+                    
+                    btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Calcular Projeção';
+                    btn.disabled = false;
+                }, 300);
+            },
+
+            renderResults(res) {
+                const area = document.getElementById('simResultsArea');
+                area.style.display = 'flex';
+                // Trigger reflow for animation
+                void area.offsetWidth;
+                area.style.opacity = '1';
+
+                const entriesCount = res.entriesList.length;
+                
+                UI.animateNumber(document.getElementById('resEntries'), entriesCount, v => Math.floor(v).toString());
+                UI.animateNumber(document.getElementById('resProfit'), res.totalProfit, v => Utils.formatCurrency(v));
+                UI.animateNumber(document.getElementById('resFinalBank'), res.finalBank, v => Utils.formatCurrency(v));
+                UI.animateNumber(document.getElementById('resROI'), res.roi, v => Utils.formatNumber(v, 2) + '%');
+                
+                if(entriesCount > 0) {
+                    document.getElementById('resStake1').textContent = Utils.formatCurrency(res.entriesList[0].stake);
+                    document.getElementById('resStakeN').textContent = Utils.formatCurrency(res.entriesList[entriesCount-1].stake);
+                }
+
+                // Render Table
+                const tbody = document.getElementById('simTableBody');
+                tbody.innerHTML = '';
+                
+                // Max rows to render to prevent DOM freeze
+                const renderLimit = Math.min(entriesCount, 1000);
+                const warning = document.getElementById('simTableWarning');
+                warning.style.display = entriesCount > 1000 ? 'block' : 'none';
+
+                let html = '';
+                for(let i=0; i < renderLimit; i++) {
+                    const row = res.entriesList[i];
+                    const isLast = i === entriesCount - 1 && res.success;
+                    const rowStyle = isLast ? 'background-color: var(--color-warning-bg); font-weight: 500;' : '';
+                    
+                    html += `<tr style="${rowStyle}">
+                        <td>${row.iteration}</td>
+                        <td class="font-mono">${Utils.formatCurrency(row.bancaPre)}</td>
+                        <td class="font-mono text-danger">-${Utils.formatCurrency(row.stake)}</td>
+                        <td class="font-mono text-success">+${Utils.formatCurrency(row.retorno)}</td>
+                        <td class="font-mono">${Utils.formatCurrency(row.lucroAcum)}</td>
+                        <td>
+                            <div class="flex items-center gap-2">
+                                <div style="width:40px; font-size:11px; text-align:right;">${Utils.formatNumber(row.percentToMeta, 1)}%</div>
+                                <div class="progress-bar-bg" style="flex:1;">
+                                    <div class="progress-bar-fill" style="width: ${row.percentToMeta}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>`;
+                }
+                tbody.innerHTML = html;
+                
+                // Update global bank badge based on final bank
+                document.getElementById('globalBankValue').textContent = Utils.formatCurrency(res.finalBank);
+                const badge = document.getElementById('globalBankBadge');
+                badge.classList.add('highlight');
+                setTimeout(() => badge.classList.remove('highlight'), 1000);
+            },
+            
+            exportCSV() {
+                if(!AppState.currentSim) return;
+                const data = AppState.currentSim.entriesList;
+                let csv = "Entrada,Banca_Pre,Stake,Retorno,Lucro_Acumulado,Banca_Pos,%_Meta\n";
+                data.forEach(r => {
+                    csv += `${r.iteration},${r.bancaPre.toFixed(2)},${r.stake.toFixed(2)},${r.retorno.toFixed(2)},${r.lucroAcum.toFixed(2)},${r.bancaPost.toFixed(2)},${r.percentToMeta.toFixed(2)}\n`;
+                });
+                Utils.downloadCSV(csv, `simulacao_oddslab_${Date.now()}.csv`);
+                UI.showToast("Download iniciado", "success");
+            },
+
+            shareLink() {
+                const params = new URLSearchParams({
+                    b: document.getElementById('simBanca').value,
+                    o: document.getElementById('simOdd').value,
+                    p: document.getElementById('simPct').value,
+                    m: document.getElementById('simMeta').value,
+                    s: document.querySelector('input[name="simStrategy"]:checked').value,
+                    mp: document.getElementById('simMetaIsPct').checked ? '1' : '0'
+                });
+                const url = `${window.location.origin}${window.location.pathname}?${params.toString()}#simulador`;
+                
+                // Simple clipboard fallback
+                const textarea = document.createElement("textarea");
+                textarea.value = url;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    UI.showToast("Link copiado para a área de transferência!", "success");
+                } catch (err) {
+                    UI.showToast("Erro ao copiar link.", "error");
+                }
+                document.body.removeChild(textarea);
+            },
+
+            checkUrlParams() {
+                const params = new URLSearchParams(window.location.search);
+                if(params.has('b')) document.getElementById('simBanca').value = params.get('b');
+                if(params.has('o')) document.getElementById('simOdd').value = params.get('o');
+                if(params.has('p')) {
+                    document.getElementById('simPct').value = params.get('p');
+                    document.getElementById('simPctVal').textContent = params.get('p') + '%';
+                }
+                if(params.has('m')) document.getElementById('simMeta').value = params.get('m');
+                if(params.has('mp') && params.get('mp') === '1') {
+                    document.getElementById('simMetaIsPct').checked = true;
+                    // trigger change
+                    document.getElementById('simMetaIsPct').dispatchEvent(new Event('change'));
+                }
+                if(params.has('s')) {
+                    const radios = document.getElementsByName('simStrategy');
+                    radios.forEach(r => { if(r.value === params.get('s')) r.checked = true; });
+                }
+                
+                if(params.has('b') && params.has('o')) {
+                    setTimeout(() => document.getElementById('btnSimCalc').click(), 500);
+                    // clear url params without reload
+                    window.history.replaceState({}, document.title, window.location.pathname + "#simulador");
+                }
+            }
+        };
+
+        // === SECTION: MODULE 2 - HISTORY ===
+        const HistoryModule = {
+            init() {
+                document.getElementById('btnHistClearAll').addEventListener('click', () => {
+                    if(AppState.history.length === 0) return;
+                    UI.confirm("Tem certeza que deseja apagar todo o histórico?", () => {
+                        AppState.clearHistory();
+                        this.render();
+                    });
+                });
+
+                document.getElementById('btnHistExportAll').addEventListener('click', () => {
+                    if(AppState.history.length === 0) return;
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(AppState.history));
+                    const downloadAnchorNode = document.createElement('a');
+                    downloadAnchorNode.setAttribute("href", dataStr);
+                    downloadAnchorNode.setAttribute("download", `oddslab_history_${Date.now()}.json`);
+                    document.body.appendChild(downloadAnchorNode); // required for firefox
+                    downloadAnchorNode.click();
+                    downloadAnchorNode.remove();
+                    UI.showToast("Histórico exportado", "success");
+                });
+
+                document.getElementById('histSearch').addEventListener('input', (e) => this.render(e.target.value.toLowerCase()));
+            },
+
+            render(filterText = '') {
+                const tbody = document.getElementById('histTableBody');
+                let html = '';
+                let totalRoi = 0, maxProfit = 0, totalOdd = 0, count = 0;
+
+                const filtered = AppState.history.filter(sim => {
+                    if(!filterText) return true;
+                    const searchStr = `${sim.bancaIni} ${sim.odd} ${sim.strategy}`.toLowerCase();
+                    return searchStr.includes(filterText);
+                });
+
+                if(filtered.length === 0) {
+                    html = `<tr><td colspan="7" class="text-center text-muted" style="padding: 32px;">Nenhuma simulação encontrada.</td></tr>`;
+                } else {
+                    filtered.forEach((sim, index) => {
+                        // Stats calc
+                        count++;
+                        totalRoi += sim.roi;
+                        if(sim.totalProfit > maxProfit) maxProfit = sim.totalProfit;
+                        totalOdd += sim.odd;
+
+                        const stratMap = { 'percent': '% Fixo', 'fixed': 'Valor Fixo', 'kelly': 'Kelly' };
+                        
+                        html += `
+                        <tr>
+                            <td>${Utils.formatDate(sim.date)}</td>
+                            <td class="font-mono">${Utils.formatCurrency(sim.bancaIni)}</td>
+                            <td>${Utils.formatNumber(sim.odd, 2)}</td>
+                            <td><span class="badge badge-neutral">${stratMap[sim.strategy]}</span></td>
+                            <td>${sim.entriesList.length}</td>
+                            <td class="font-mono text-${sim.roi > 0 ? 'success' : 'danger'}">${Utils.formatNumber(sim.roi, 2)}%</td>
+                            <td style="text-align: right;">
+                                <button class="btn-ghost" onclick="HistoryModule.loadSim('${sim.id}')" title="Carregar no Simulador">🔄</button>
+                                <button class="btn-ghost text-danger" onclick="HistoryModule.deleteSim('${sim.id}')" title="Excluir">🗑</button>
+                            </td>
+                        </tr>`;
+                    });
+                }
+                
+                tbody.innerHTML = html;
+
+                // Update Stats
+                document.getElementById('statHistCount').textContent = count;
+                document.getElementById('statHistAvgRoi').textContent = count > 0 ? Utils.formatNumber(totalRoi / count, 1) + '%' : '0%';
+                document.getElementById('statHistMaxProfit').textContent = Utils.formatCurrency(maxProfit);
+                document.getElementById('statHistAvgOdd').textContent = count > 0 ? Utils.formatNumber(totalOdd / count, 2) : '0.00';
+            },
+
+            deleteSim(id) {
+                AppState.history = AppState.history.filter(s => s.id !== id);
+                AppState.save();
+                this.render(document.getElementById('histSearch').value);
+                UI.showToast("Simulação excluída.", "info");
+            },
+
+            loadSim(id) {
+                const sim = AppState.history.find(s => s.id === id);
+                if(sim) {
+                    document.getElementById('simBanca').value = sim.bancaIni;
+                    document.getElementById('simOdd').value = sim.odd;
+                    document.getElementById('simPct').value = sim.pctFixo;
+                    document.getElementById('simPctVal').textContent = sim.pctFixo + '%';
+                    
+                    // Logic to extract original meta is complex since it was saved absolute. 
+                    // Let's set the absolute target as fixed value target.
+                    document.getElementById('simMetaIsPct').checked = false;
+                    document.getElementById('simMetaPrefix').textContent = Utils.getCurrencySymbol();
+                    document.getElementById('simMeta').value = Utils.formatNumber(sim.metaAbsoluta - sim.bancaIni, 2).replace(/\./g, '').replace(',', '.'); // primitive parse back to english format for input number
+
+                    const radios = document.getElementsByName('simStrategy');
+                    radios.forEach(r => { if(r.value === sim.strategy) r.checked = true; });
+                    
+                    window.location.hash = '#simulador';
+                    UI.showToast("Simulação carregada.", "success");
+                    setTimeout(() => document.getElementById('btnSimCalc').click(), 300);
+                }
+            }
+        };
+
+        // === SECTION: MODULE 3 - MARTINGALE ===
+        const MartingaleModule = {
+            init() {
+                const inputs = ['martBanca', 'martStake', 'martOdd', 'martMult', 'martSteps'];
+                inputs.forEach(id => {
+                    document.getElementById(id).addEventListener('input', () => this.calculate());
+                });
+                // Initial calc
+                this.calculate();
+            },
+
+            calculate() {
+                const banca = parseFloat(document.getElementById('martBanca').value) || 0;
+                const stakeIni = parseFloat(document.getElementById('martStake').value) || 0;
+                const odd = parseFloat(document.getElementById('martOdd').value) || 2;
+                const mult = parseFloat(document.getElementById('martMult').value) || 2;
+                const steps = parseInt(document.getElementById('martSteps').value) || 8;
+                
+                document.getElementById('martStepsVal').textContent = steps;
+
+                if(!banca || !stakeIni || odd <= 1) return;
+
+                const tbody = document.getElementById('martTableBody');
+                let html = '';
+                let currentStake = stakeIni;
+                let lostAccum = 0;
+                let riskStatus = 'Seguro';
+                let riskColor = 'var(--color-success)';
+
+                for(let i=1; i<=steps; i++) {
+                    const prevLoss = lostAccum;
+                    lostAccum += currentStake;
+                    const bancaRestante = banca - lostAccum;
+                    
+                    let status = '✅ OK';
+                    let trClass = '';
+                    
+                    if(bancaRestante < 0) {
+                        status = '❌ Quebra';
+                        trClass = 'background-color: var(--color-danger-bg); color: var(--color-danger);';
+                    } else if(bancaRestante < banca * 0.2) {
+                        status = '🚨 Crítico';
+                        trClass = 'color: var(--color-danger); font-weight:bold;';
+                    } else if(bancaRestante < banca * 0.5) {
+                        status = '⚠️ Atenção';
+                        trClass = 'color: var(--color-warning);';
+                    }
+
+                    // If wins at this step
+                    const winReturn = currentStake * odd;
+                    const netProfitIfWin = winReturn - lostAccum;
+
+                    html += `<tr style="${trClass}">
+                        <td>${i}</td>
+                        <td class="font-mono">${Utils.formatCurrency(currentStake)}</td>
+                        <td class="font-mono text-danger">-${Utils.formatCurrency(lostAccum)}</td>
+                        <td class="font-mono">${Utils.formatCurrency(bancaRestante)}</td>
+                        <td>${status}</td>
+                    </tr>`;
+
+                    // Next stake
+                    currentStake = currentStake * mult;
+                }
+                
+                tbody.innerHTML = html;
+
+                // Update Risk Card
+                const card = document.getElementById('martRiskCard');
+                const title = document.getElementById('martRiskTitle');
+                const text = document.getElementById('martRiskText');
+                
+                const finalBank = banca - lostAccum;
+                const maxRiskPct = (lostAccum / banca) * 100;
+                
+                if(finalBank < 0) {
+                    card.style.borderLeftColor = 'var(--color-danger)';
+                    title.textContent = "Risco Extremo: Quebra de Banca";
+                    title.className = "text-lg text-danger";
+                    text.innerHTML = `Sua banca <b>não suporta</b> ${steps} reds seguidos com este multiplicador. Quebra ocorre na rodada onde o saldo fica negativo.`;
+                } else if(maxRiskPct > 50) {
+                    card.style.borderLeftColor = 'var(--color-warning)';
+                    title.textContent = "Risco Alto";
+                    title.className = "text-lg text-warning";
+                    text.innerHTML = `Uma sequência de ${steps} reds consome <b>${Utils.formatNumber(maxRiskPct, 1)}%</b> da sua banca. Tensão emocional altíssima.`;
+                } else {
+                    card.style.borderLeftColor = 'var(--color-success)';
+                    title.textContent = "Risco Controlado";
+                    title.className = "text-lg text-success";
+                    text.innerHTML = `Banca suporta a sequência confortavelmente, arriscando <b>${Utils.formatNumber(maxRiskPct, 1)}%</b> do total.`;
+                }
+            }
+        };
+
+        // === SECTION: MODULE 4 - CHARTS ===
+        const ChartModule = {
+            chartTheme: {
+                color: '#6B6B6B',
+                grid: '#E4E2DC',
+                accent: '#1A1A2E',
+                accentFill: 'rgba(26, 26, 46, 0.1)',
+                bar: '#E8C547',
+                monteCarlo: 'rgba(107, 107, 107, 0.2)'
+            },
+
+            applyThemeColors() {
+                const isDark = document.documentElement.classList.contains('dark');
+                if(isDark) {
+                    this.chartTheme.color = '#A0A0A5';
+                    this.chartTheme.grid = '#2A2A30';
+                    this.chartTheme.accent = '#E8C547';
+                    this.chartTheme.accentFill = 'rgba(232, 197, 71, 0.1)';
+                    this.chartTheme.bar = '#F1C40F';
+                    this.chartTheme.monteCarlo = 'rgba(160, 160, 165, 0.2)';
+                } else {
+                    this.chartTheme.color = '#6B6B6B';
+                    this.chartTheme.grid = '#E4E2DC';
+                    this.chartTheme.accent = '#1A1A2E';
+                    this.chartTheme.accentFill = 'rgba(26, 26, 46, 0.1)';
+                    this.chartTheme.bar = '#E8C547';
+                    this.chartTheme.monteCarlo = 'rgba(107, 107, 107, 0.2)';
+                }
+                Chart.defaults.color = this.chartTheme.color;
+                Chart.defaults.borderColor = this.chartTheme.grid;
+            },
+
+            init() {
+                window.ChartInstances = window.ChartInstances || {};
+                this.applyThemeColors();
+                
+                // Populate Select
+                const select = document.getElementById('chartSourceSelect');
+                select.innerHTML = '<option value="current">Simulação Atual (em memória)</option>';
+                AppState.history.forEach(sim => {
+                    const d = Utils.formatDate(sim.date);
+                    select.innerHTML += `<option value="${sim.id}">${d} - Alvo: ${Utils.formatCurrency(sim.metaAbsoluta)}</option>`;
+                });
+
+                select.addEventListener('change', () => this.renderAll());
+                document.getElementById('btnRunMonteCarlo').addEventListener('click', () => this.runMonteCarlo());
+
+                this.renderAll();
+            },
+
+            getData() {
+                const val = document.getElementById('chartSourceSelect').value;
+                if(val === 'current') return AppState.currentSim;
+                return AppState.history.find(s => s.id === val);
+            },
+
+            renderAll() {
+                const data = this.getData();
+                if(!data || !data.entriesList || data.entriesList.length === 0) {
+                    // clear charts
+                    return;
+                }
+                this.drawGrowth(data);
+                this.drawStake(data);
+                document.getElementById('monteCarloContainer').style.display = 'none'; // hide mc until clicked
+            },
+
+            destroyChart(id) {
+                if(window.ChartInstances[id]) {
+                    window.ChartInstances[id].destroy();
+                }
+            },
+
+            drawGrowth(simData) {
+                this.destroyChart('growth');
+                const ctx = document.getElementById('chartGrowth').getContext('2d');
+                const labels = simData.entriesList.map(e => e.iteration);
+                const dataPoints = simData.entriesList.map(e => e.bancaPost);
+
+                window.ChartInstances['growth'] = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Banca Total (R$)',
+                            data: dataPoints,
+                            borderColor: this.chartTheme.accent,
+                            backgroundColor: this.chartTheme.accentFill,
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 0,
+                            pointHitRadius: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: {
+                            callbacks: { label: (ctx) => Utils.formatCurrency(ctx.raw) }
+                        }},
+                        scales: { y: { beginAtZero: false } }
+                    }
+                });
+            },
+
+            drawStake(simData) {
+                this.destroyChart('stake');
+                const ctx = document.getElementById('chartStake').getContext('2d');
+                const labels = simData.entriesList.map(e => e.iteration);
+                const dataPoints = simData.entriesList.map(e => e.stake);
+
+                window.ChartInstances['stake'] = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Valor da Stake (R$)',
+                            data: dataPoints,
+                            backgroundColor: this.chartTheme.bar,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { x: { display: false } } // hide x axis for cleanliness if many bars
+                    }
+                });
+            },
+
+            runMonteCarlo() {
+                const data = this.getData();
+                if(!data) {
+                    UI.showToast("Nenhuma simulação base selecionada.", "warning");
+                    return;
+                }
+
+                const container = document.getElementById('monteCarloContainer');
+                container.style.display = 'block';
+                
+                const simCount = 200; // Keep it reasonable for browser
+                const winProb = Utils.calcImplicitProb(data.odd) / 100;
+                const paths = [];
+                let successCount = 0;
+                const maxSteps = Math.min(data.entriesList.length * 3, 500); // cap max steps
+
+                for(let i=0; i<simCount; i++) {
+                    let bank = data.bancaIni;
+                    let step = 0;
+                    let path = [bank];
+                    let won = false;
+
+                    while(bank < data.metaAbsoluta && bank > 0 && step < maxSteps) {
+                        step++;
+                        // simplified stake calc assuming percent strategy for MC demo
+                        let stake = bank * (data.pctFixo/100);
+                        if(stake > bank) stake = bank;
+                        
+                        const isWin = Math.random() <= winProb;
+                        if(isWin) {
+                            bank += stake * (data.odd - 1);
+                        } else {
+                            bank -= stake;
+                        }
+                        path.push(bank);
+                    }
+                    if(bank >= data.metaAbsoluta) { won = true; successCount++; }
+                    paths.push(path);
+                }
+
+                // Render MC Chart
+                this.destroyChart('mc');
+                const ctx = document.getElementById('chartMonteCarlo').getContext('2d');
+                
+                const datasets = paths.map((p, i) => ({
+                    label: `Sim ${i}`,
+                    data: p,
+                    borderColor: i === 0 ? this.chartTheme.accent : this.chartTheme.monteCarlo, // Highlight first line
+                    borderWidth: i === 0 ? 2 : 1,
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0.1
+                }));
+
+                // Find longest path for labels
+                const maxLen = Math.max(...paths.map(p => p.length));
+                const labels = Array.from({length: maxLen}, (_, i) => i);
+
+                window.ChartInstances['mc'] = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: labels, datasets: datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false, // Turn off animation for large multi-line
+                        plugins: { legend: { display: false }, tooltip: {enabled: false} },
+                        scales: { y: { type: 'logarithmic' } } // Log scale often better for compounding
+                    }
+                });
+
+                // Update Stats
+                const successRate = (successCount / simCount) * 100;
+                document.getElementById('mcStats').innerHTML = `
+                    <div class="metric-box"><div class="metric-label">Simulações</div><div class="metric-val">${simCount}</div></div>
+                    <div class="metric-box"><div class="metric-label">Taxa de Sucesso (Atingiu Meta)</div><div class="metric-val text-${successRate > 50 ? 'success' : 'danger'}">${successRate.toFixed(1)}%</div></div>
+                    <div class="metric-box"><div class="metric-label">Risco de Ruína (Quebra)</div><div class="metric-val">${(100 - successRate).toFixed(1)}%</div></div>
+                `;
+                
+                // Scroll down to it
+                container.scrollIntoView({behavior: 'smooth', block: 'end'});
+            }
+        };
+
+        // === SECTION: MODULE 5 - CALCULATORS ===
+        const CalcsModule = {
+            init() {
+                // Tabs logic
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                        e.target.classList.add('active');
+                        document.getElementById(e.target.dataset.target).classList.add('active');
+                    });
+                });
+
+                // Odds Converter
+                const cDec = document.getElementById('cOddDec');
+                const cFra = document.getElementById('cOddFra');
+                const cAm = document.getElementById('cOddAm');
+                const cProb = document.getElementById('cOddProb');
+
+                const updateFromDec = (dec) => {
+                    if(isNaN(dec) || dec <= 1) { cFra.value=''; cAm.value=''; cProb.textContent='--%'; return; }
+                    cProb.textContent = Utils.formatNumber((1/dec)*100, 1) + '%';
+                    cAm.value = dec >= 2 ? `+${Math.round((dec-1)*100)}` : Math.round(-100/(dec-1));
+                    // Simple fraction approx (not perfect math but ok for display)
+                    cFra.value = `${Math.round((dec-1)*100)}/100`; 
+                };
+
+                cDec.addEventListener('input', e => { const v = parseFloat(e.target.value); updateFromDec(v); });
+                cAm.addEventListener('input', e => { 
+                    const v = parseFloat(e.target.value);
+                    if(isNaN(v)) return;
+                    const dec = v > 0 ? (v/100)+1 : (100/Math.abs(v))+1;
+                    cDec.value = dec.toFixed(2);
+                    updateFromDec(dec);
+                });
+
+                // Value Bet
+                const valCalc = () => {
+                    const odd = parseFloat(document.getElementById('cValOdd').value);
+                    const prob = parseFloat(document.getElementById('cValProb').value) / 100;
+                    const resDiv = document.getElementById('cValResult');
+                    if(odd && prob) {
+                        const ev = (prob * odd) - 1;
+                        if(ev > 0) {
+                            resDiv.innerHTML = `<span class="text-success" style="font-size:20px; font-weight:bold;">+ EV ✅ (Lucrativa)</span><br><span class="text-sm">Vantagem de ${(ev*100).toFixed(2)}%</span>`;
+                            resDiv.style.borderColor = 'var(--color-success)';
+                            resDiv.style.background = 'var(--color-success-bg)';
+                        } else {
+                            resDiv.innerHTML = `<span class="text-danger" style="font-size:20px; font-weight:bold;">- EV ❌ (Não apostar)</span><br><span class="text-sm">Desvantagem de ${(ev*100).toFixed(2)}%</span>`;
+                            resDiv.style.borderColor = 'var(--color-danger)';
+                            resDiv.style.background = 'var(--color-danger-bg)';
+                        }
+                    }
+                };
+                document.getElementById('cValOdd').addEventListener('input', valCalc);
+                document.getElementById('cValProb').addEventListener('input', valCalc);
+
+                // Kelly
+                const kelCalc = () => {
+                    const odd = parseFloat(document.getElementById('cKelOdd').value);
+                    const prob = parseFloat(document.getElementById('cKelProb').value);
+                    const frac = parseFloat(document.getElementById('cKelFrac').value);
+                    document.getElementById('cKelFracVal').textContent = frac === 1 ? '1 (Full)' : frac;
+                    
+                    if(odd && prob) {
+                        const rec = Utils.calcKelly(prob, odd, frac);
+                        const resDiv = document.getElementById('cKelResult');
+                        if(rec <= 0) {
+                            resDiv.textContent = "0% (Não apostar)";
+                            resDiv.className = "stat-value text-danger";
+                        } else {
+                            resDiv.textContent = `${rec.toFixed(2)}% da Banca`;
+                            resDiv.className = rec > 10 ? "stat-value text-warning" : "stat-value text-success";
+                        }
+                    }
+                };
+                ['cKelOdd', 'cKelProb', 'cKelFrac'].forEach(id => document.getElementById(id).addEventListener('input', kelCalc));
+
+                // Dutching
+                this.renderDutchInputs(3);
+                document.getElementById('btnDutAdd').addEventListener('click', () => {
+                    const currentCount = document.querySelectorAll('.dut-input').length;
+                    if(currentCount < 6) this.renderDutchInputs(currentCount + 1);
+                    else UI.showToast("Máximo de 6 seleções.", "warning");
+                });
+                document.getElementById('cDutBank').addEventListener('input', () => this.calcDutching());
+            },
+
+            renderDutchInputs(count) {
+                const container = document.getElementById('cDutInputs');
+                let html = '';
+                // preserve values
+                const oldVals = Array.from(document.querySelectorAll('.dut-input')).map(el => el.value);
+                
+                for(let i=0; i<count; i++) {
+                    const val = oldVals[i] || '';
+                    html += `
+                    <div class="form-group">
+                        <label class="form-label">Seleção ${i+1} (Odd)</label>
+                        <input type="number" class="form-control dut-input" id="dutOdd${i}" value="${val}" min="1.01" step="0.01">
+                    </div>`;
+                }
+                container.innerHTML = html;
+                document.querySelectorAll('.dut-input').forEach(el => el.addEventListener('input', () => this.calcDutching()));
+                this.calcDutching();
+            },
+
+            calcDutching() {
+                const totalBank = parseFloat(document.getElementById('cDutBank').value) || 0;
+                const inputs = document.querySelectorAll('.dut-input');
+                const odds = Array.from(inputs).map(i => parseFloat(i.value)).filter(v => v > 1);
+                const tbody = document.getElementById('cDutBody');
+                
+                if(odds.length === 0 || totalBank <= 0) { tbody.innerHTML = ''; return; }
+
+                // Math: Stake_i = (TotalBank / Odd_i) / Sum(1/Odd_n)
+                const sumInverseOdds = odds.reduce((acc, val) => acc + (1/val), 0);
+                const impliedProbTotal = sumInverseOdds * 100;
+                
+                let html = '';
+                if(impliedProbTotal >= 100) {
+                    html = `<tr><td colspan="4" class="text-danger text-center">Odds não permitem Arbitragem/Dutching garantido. (Soma das probs: ${impliedProbTotal.toFixed(1)}%)</td></tr>`;
+                } else {
+                    const guaranteedReturn = totalBank / sumInverseOdds;
+                    const netProfit = guaranteedReturn - totalBank;
+                    
+                    odds.forEach((odd, i) => {
+                        const stake = (totalBank / odd) / sumInverseOdds;
+                        html += `
+                        <tr>
+                            <td>Sel ${i+1}</td>
+                            <td>${odd.toFixed(2)}</td>
+                            <td class="font-mono text-accent">${Utils.formatCurrency(stake)}</td>
+                            <td class="font-mono text-success">${Utils.formatCurrency(netProfit)}</td>
+                        </tr>`;
+                    });
+                }
+                tbody.innerHTML = html;
+            }
+        };
+
+        // === SECTION: GLOSSARY DATA ===
+        const GLOSSARY_DATA = [
+            { category: 'Fundamentos', term: 'Odd', desc: 'Representa a probabilidade de um evento ocorrer na visão da casa de apostas. Também define o multiplicador do prêmio. Ex: Odd 2.00 significa 50% de chance teórica e dobra o valor apostado.' },
+            { category: 'Fundamentos', term: 'Banca (Bankroll)', desc: 'O valor total de dinheiro que você separou exclusivamente para realizar apostas. A regra número 1 das apostas é nunca arriscar dinheiro que fará falta.' },
+            { category: 'Fundamentos', term: 'Stake', desc: 'O valor da aposta em uma entrada específica. Na gestão profissional, a stake é medida em porcentagem da banca (ex: 2%) ou em "Unidades".' },
+            { category: 'Métricas', term: 'ROI (Return on Investment)', desc: 'Retorno sobre o Investimento. É a métrica mais importante. Um ROI de 5% após 1000 apostas significa que você lucrou 5% sobre o montante total movimentado (turnover).' },
+            { category: 'Métricas', term: 'Yield', desc: 'Similar ao ROI no contexto das apostas. É o lucro líquido dividido pelo valor total apostado, multiplicado por 100.' },
+            { category: 'Métricas', term: 'Drawdown', desc: 'A queda do pico mais alto da sua banca até o ponto mais baixo. Mede a volatilidade e o "sofrimento" da estratégia. Estratégias como Martingale têm drawdowns enormes.' },
+            { category: 'Estratégias', term: 'Critério de Kelly', desc: 'Fórmula matemática desenvolvida por John Kelly em 1956 para determinar o tamanho ideal de uma série de apostas. Ela maximiza o crescimento do capital no longo prazo minimizando o risco de ruína, desde que você saiba a probabilidade real exata.' },
+            { category: 'Estratégias', term: 'Martingale', desc: 'Estratégia perigosa onde você dobra a aposta após cada perda. O objetivo é recuperar tudo com uma única vitória. Matematicamente, leva à quebra da banca pois o capital é finito e as casas têm limites de apostas.' },
+            { category: 'Estratégias', term: 'Value Bet (+EV)', desc: 'Aposta de Valor Esperado Positivo. Ocorre quando a probabilidade real de um evento acontecer é maior do que a probabilidade implícita que a casa de apostas está oferecendo na Odd.' }
+        ];
+
+        const SettingsAndGlossaryModule = {
+            init() {
+                // Settings Init
+                document.getElementById('cfgCurrency').value = AppState.config.currency;
+                document.getElementById('cfgFormat').value = AppState.config.locale;
+                
+                ['cfgCurrency', 'cfgFormat'].forEach(id => {
+                    document.getElementById(id).addEventListener('change', (e) => {
+                        if(id === 'cfgCurrency') AppState.config.currency = e.target.value;
+                        if(id === 'cfgFormat') AppState.config.locale = e.target.value;
+                        AppState.save();
+                        Utils.updateCurrencySymbols();
+                        UI.showToast("Configurações atualizadas. Recarregue a página para aplicar em tabelas geradas.", "success");
+                    });
+                });
+
+                document.getElementById('themeToggle').addEventListener('click', () => AppState.toggleTheme());
+
+                document.getElementById('btnCfgReset').addEventListener('click', () => {
+                    UI.confirm("Isto apagará TODAS as simulações e configurações. Digite CONFIRMAR para prosseguir.", () => {
+                        localStorage.removeItem('oddslab_state');
+                        window.location.reload();
+                    });
+                });
+                
+                document.getElementById('cfgImportFile').addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if(!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const parsed = JSON.parse(e.target.result);
+                            if(parsed.history && parsed.config) {
+                                localStorage.setItem('oddslab_state', JSON.stringify(parsed));
+                                UI.showToast("Backup importado com sucesso! Recarregando...", "success");
+                                setTimeout(() => window.location.reload(), 1500);
+                            } else throw new Error("Formato inválido");
+                        } catch(err) {
+                            UI.showToast("Erro ao importar arquivo JSON.", "error");
+                        }
+                    };
+                    reader.readAsText(file);
+                });
+
+                // Glossary Init
+                this.renderGlossary();
+                document.getElementById('glosSearch').addEventListener('input', (e) => this.renderGlossary(e.target.value.toLowerCase()));
+            },
+
+            renderGlossary(filter = '') {
+                const container = document.getElementById('glosContainer');
+                container.innerHTML = '';
+                
+                const filtered = GLOSSARY_DATA.filter(item => 
+                    item.term.toLowerCase().includes(filter) || item.desc.toLowerCase().includes(filter)
+                );
+
+                if(filtered.length === 0) {
+                    container.innerHTML = '<p class="text-muted text-center" style="padding: 20px;">Nenhum termo encontrado.</p>';
+                    return;
+                }
+
+                // Group by category
+                const groups = {};
+                filtered.forEach(item => {
+                    if(!groups[item.category]) groups[item.category] = [];
+                    groups[item.category].push(item);
+                });
+
+                let html = '';
+                Object.keys(groups).forEach(cat => {
+                    html += `<h4 class="text-muted" style="margin: 24px 0 12px; font-family: var(--font-body); text-transform:uppercase; letter-spacing:1px; font-size:12px;">${cat}</h4>`;
+                    groups[cat].forEach(item => {
+                        html += `
+                        <div class="accordion-item">
+                            <button class="accordion-header" onclick="this.parentElement.classList.toggle('active')">
+                                <span>${item.term}</span>
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.3s;"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
+                            <div class="accordion-body">
+                                <p style="line-height: 1.6;">${item.desc}</p>
+                            </div>
+                        </div>`;
+                    });
+                });
+                container.innerHTML = html;
+            }
+        };
+
+        // Mobile Menu Logic
+        document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.add('open');
+            document.getElementById('mobileOverlay').classList.add('active');
+        });
+        document.getElementById('mobileOverlay').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('mobileOverlay').classList.remove('active');
+        });
+
+        // App Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            AppState.init();
+            UI.init();
+            Utils.updateCurrencySymbols();
+            
+            SimulatorModule.init();
+            HistoryModule.init();
+            MartingaleModule.init();
+            CalcsModule.init();
+            SettingsAndGlossaryModule.init();
+            
+            Router.init();
+            
+            // Welcome toast
+            if(AppState.history.length === 0 && !window.location.hash.includes('?')) {
+                setTimeout(() => UI.showToast("Bem-vindo ao OddsLab! Configure sua primeira simulação.", "info"), 1000);
+            }
+        });
+
+    </script>
+</body>
+</html>
